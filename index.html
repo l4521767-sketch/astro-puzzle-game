@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Puzzle Game</title>
+    <style>
+        :root {
+            --bg-color: #0b0d19;
+            --card-bg: #161b33;
+            --accent: #4d94ff;
+            --accent-hover: #1a75ff;
+            --text: #ffffff;
+            --text-dim: #a0aec0;
+            --success: #2e7d32;
+            --gold: #ffd700;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        body { background-color: var(--bg-color); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px), radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px), radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px); background-size: 550px 550px, 350px 350px, 250px 250px; background-position: 0 0, 40px 60px, 130px 270px; }
+        .header-bar { width: 100%; max-width: 900px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .lang-btn { background: #2d3748; color: var(--text); border: 1px solid var(--accent); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .lang-btn:hover { background: var(--accent); }
+        .container { width: 100%; max-width: 900px; background: rgba(22, 27, 51, 0.85); backdrop-filter: blur(10px); border-radius: 16px; padding: 30px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); text-align: center; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        h1 { font-size: 2.5rem; margin-bottom: 15px; color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        p { color: var(--text-dim); margin-bottom: 20px; line-height: 1.6; }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 28px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background 0.2s, transform 0.1s; margin: 10px 5px; }
+        .btn:hover { background: var(--accent-hover); transform: translateY(-2px); }
+        .game-stats { display: flex; justify-content: space-around; background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 10px; margin-bottom: 20px; font-size: 1.2rem; font-weight: bold; }
+        .stat-box span { color: var(--gold); }
+        .puzzle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .planet-card { background: #222a4a; border: 2px dashed #4a5568; border-radius: 12px; padding: 15px; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; transition: border-color 0.3s; }
+        .planet-card.filled { border-style: solid; border-color: var(--accent); background: #1e293b; }
+        .planet-slot-num { font-size: 0.9rem; color: var(--accent); font-weight: bold; }
+        .planet-img { font-size: 3rem; margin: 10px 0; }
+        .planet-name { font-weight: bold; font-size: 1.1rem; }
+        .trait-pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; min-height: 100px; }
+        .trait-item { background: #334155; padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 0.95rem; border: 1px solid #475569; transition: all 0.2s; }
+        .trait-item:hover { background: #475569; border-color: var(--accent); }
+        .trait-item.selected { background: var(--accent); color: white; }
+        .trait-item.matched { background: var(--success); cursor: default; border-color: #4ade80; }
+        .drop-zone { width: 100%; border: 1px dashed var(--text-dim); border-radius: 6px; padding: 6px; font-size: 0.85rem; color: var(--text-dim); margin-top: 8px; cursor: pointer; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+        .drop-zone.has-item { border-style: solid; background: #0f172a; color: var(--gold); }
+        .high-score { font-size: 1.2rem; color: var(--gold); margin-top: 15px; }
+        .instructions { text-align: left; max-width: 600px; margin: 0 auto 20px auto; }
+        .instructions li { margin-bottom: 10px; color: var(--text-dim); }
+        @media (max-width: 600px) { h1 { font-size: 1.8rem; } .puzzle-grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <div style="font-weight: bold; font-size: 1.2rem; color: var(--gold);">🌌 Solar Puzzle</div>
+        <button class="lang-btn" id="lang-toggle" onclick="toggleLanguage()">TH / CN</button>
+    </div>
+    <div class="container">
+        <div id="screen-menu" class="screen active">
+            <h1 id="title-main">ระบบสุริยะและดาวเคราะห์ 8 ดวง</h1>
+            <p id="desc-main">เกมปริศนาจับคู่และเรียงลำดับดาวเคราะห์ เรียนรู้ดาราศาสตร์อย่างสนุกสนาน!</p>
+            <button class="btn" onclick="showScreen('screen-game'); startGame();" id="btn-start">เริ่มเล่นเกม</button>
+            <button class="btn" onclick="showScreen('screen-howto')" id="btn-howto">วิธีการเล่น</button>
+            <div class="high-score">🏆 <span id="label-highscore">คะแนนสูงสุด:</span> <span id="val-highscore">0</span></div>
+        </div>
+        <div id="screen-howto" class="screen">
+            <h1 id="title-howto">วิธีการเล่น</h1>
+            <ul class="instructions">
+                <li id="ht1">1. คลิกเลือกคุณสมบัติเด่นของดาวเคราะห์จากกล่องด้านล่าง</li>
+                <li id="ht2">2. คลิกวางใส่ในช่องดาวเคราะห์ที่ถูกต้องตามลำดับระยะห่างจากดวงอาทิตย์</li>
+                <li id="ht3">3. จับคู่ให้ครบทั้ง 8 ดวงก่อนเวลาจะหมดลง</li>
+                <li id="ht4">4. กดปุ่ม 'ส่งคำตอบ' เมื่อมั่นใจเพื่อตรวจคะแนน</li>
+            </ul>
+            <button class="btn" onclick="showScreen('screen-menu')" id="btn-back">กลับหน้าหลัก</button>
+        </div>
+        <div id="screen-game" class="screen">
+            <div class="game-stats">
+                <div class="stat-box"><span id="lbl-time">เวลา:</span> <span id="timer">120</span>s</div>
+                <div class="stat-box"><span id="lbl-score">คะแนน:</span> <span id="score">0</span></div>
+            </div>
+            <div class="puzzle-grid" id="planet-grid"></div>
+            <h3 id="lbl-traits" style="margin-bottom: 10px; color: var(--accent);">แท็กคุณสมบัติเด่น (คลิกเพื่อเลือก)</h3>
+            <div class="trait-pool" id="trait-pool"></div>
+            <div style="margin-top: 20px;">
+                <button class="btn" onclick="checkAnswers()" id="btn-submit">ส่งคำตอบ</button>
+            </div>
+        </div>
+        <div id="screen-result" class="screen">
+            <h1 id="title-result">สรุปผลคะแนน</h1>
+            <p id="result-msg" style="font-size: 1.5rem; color: var(--gold);"></p>
+            <p style="font-size: 1.2rem;"><span id="lbl-final-score">คะแนนที่ได้:</span> <span id="final-score">0</span></p>
+            <p style="font-size: 1.2rem;"><span id="lbl-time-used">เวลาที่ใช้:</span> <span id="time-used">0</span>s</p>
+            <button class="btn" onclick="showScreen('screen-game'); startGame();" id="btn-restart">เล่นอีกครั้ง</button>
+            <button class="btn" onclick="showScreen('screen-menu')" id="btn-result-menu">กลับหน้าหลัก</button>
+        </div>
+    </div>
+    <script>
+        const i18n = {
+            th: { titleMain: "ระบบสุริยะและดาวเคราะห์ 8 ดวง", descMain: "เกมปริศนาจับคู่และเรียงลำดับดาวเคราะห์ เรียนรู้ดาราศาสตร์อย่างสนุกสนาน!", btnStart: "เริ่มเล่นเกม", btnHowto: "วิธีการเล่น", labelHighscore: "คะแนนสูงสุด:", titleHowto: "วิธีการเล่น", ht1: "1. คลิกเลือกคุณสมบัติเด่นของดาวเคราะห์จากกล่องด้านล่าง", ht2: "2. คลิกวางใส่ในช่องดาวเคราะห์ที่ถูกต้องตามลำดับระยะห่างจากดวงอาทิตย์", ht3: "3. จับคู่ให้ครบทั้ง 8 ดวงก่อนเวลาจะหมดลง", ht4: "4. กดปุ่ม 'ส่งคำตอบ' เมื่อมั่นใจเพื่อตรวจคะแนน", btnBack: "กลับหน้าหลัก", lblTime: "เวลาเหลือ:", lblScore: "คะแนน:", lblTraits: "เลือกคุณสมบัติเด่น (คลิกเพื่อเลือกวาง):", btnSubmit: "ส่งคำตอบ", titleResult: "สรุปผลคะแนน", lblFinalScore: "คะแนนที่ได้:", lblTimeUsed: "เวลาที่ใช้ไป:", btnRestart: "เล่นอีกครั้ง", btnResultMenu: "กลับหน้าหลัก", slotOrder: "ลำดับที่", selectFirst: "โปรดคลิกเลือกคุณสมบัติก่อน", winMsg: "🎉 สุดยอดมาก! คุณเชี่ยวชาญระบบสุริยะแล้ว!", timeOutMsg: "⏰ หมดเวลาแล้ว! ลองใหม่อีกครั้งนะ" },
+            cn: { titleMain: "太阳系八大行星拼图", descMain: "行星排序与特征匹配谜题，轻松探索天文学趣闻！", btnStart: "开始游戏", btnHowto: "玩法说明", labelHighscore: "最高得分:", titleHowto: "玩法说明", ht1: "1. 点击下方方块选择行星的独有特征", ht2: "2. 点击对应按离太阳距离排序的行星槽位进行填入", ht3: "3. 在倒计时结束前完成所有 8 颗行星的匹配", ht4: "4. 确认无误后点击“提交答案”结算得分", btnBack: "返回主页", lblTime: "剩余时间:", lblScore: "当前得分:", lblTraits: "行星特征库（点击选择）:", btnSubmit: "提交答案", titleResult: "结算成绩", lblFinalScore: "最终得分:", lblTimeUsed: "用时:", btnRestart: "再玩一次", btnResultMenu: "返回主页", slotOrder: "位置", selectFirst: "请先点击选择一项特征", winMsg: "🎉 太棒了！你真是太阳系小达人！", timeOutMsg: "⏰ 时间到！再接再厉哦！" }
+        };
+        const planetsData = [
+            { id: 'mercury', icon: '☿️', th: { name: 'ดาวพุธ', trait: 'ดาวเคราะห์ที่อยู่ใกล้ดวงอาทิตย์ที่สุด และเล็กที่สุด' }, cn: { name: '水星', trait: '距离太阳最近且体积最小的行星' } },
+            { id: 'venus', icon: '♀️', th: { name: 'ดาวศุกร์', trait: 'ดาวเคราะห์ที่ร้อนที่สุด มีชั้นบรรยากาศหนาแน่น' }, cn: { name: '金星', trait: '最炽热的行星，拥有浓密的大气层' } },
+            { id: 'earth', icon: '🌎', th: { name: 'โลก', trait: 'ดาวเคราะห์แห่งชีวิต เพียงดวงเดียวที่มีน้ำในรูปของเหลว' }, cn: { name: '地球', trait: '目前已知唯一存在生命的液态水星球' } },
+            { id: 'mars', icon: '♂️', th: { name: 'ดาวอังคาร', trait: 'ดาวเคราะห์สีแดง มีภูเขาไฟที่สูงที่สุดในระบบสุริยะ' }, cn: { name: '火星', trait: '被称为红色星球，拥有太阳系最高火山' } },
+            { id: 'jupiter', icon: '♃', th: { name: 'ดาวพฤหัสบดี', trait: 'ดาวเคราะห์ที่ใหญ่ที่สุด มีจุดแดงใหญ่บนพื้นผิว' }, cn: { name: '木星', trait: '体积最大的气态巨行星，拥有大红斑' } },
+            { id: 'saturn', icon: '♄', th: { name: 'ดาวเสาร์', trait: 'มีระบบวงแหวนขนาดใหญ่ที่สวยงามและโดดเด่น' }, cn: { name: '土星', trait: '拥有最壮观且宽广的行星环系统' } },
+            { id: 'uranus', icon: '♅', th: { name: 'ดาวยูเรนัส', trait: 'ดาวเคราะห์แก๊สเย็นจัด หมุนตะแคงข้างเกือบ 90 องศา' }, cn: { name: '天王星', trait: '躺着自转的冰巨星，表面极其寒冷' } },
+            { id: 'neptune', icon: '♆', th: { name: 'ดาวเนปจูน', trait: 'อยู่ไกลที่สุด มีลมพายุรุนแรงที่สุดในระบบสุริยะ' }, cn: { name: '海王星', trait: '距离太阳最远，拥有太阳系最强烈的风暴' } }
+        ];
+        let currentLang = 'th', selectedTraitId = null, userAnswers = {}, timerInterval = null, timeLeft = 120, totalScore = 0;
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("val-highscore").innerText = localStorage.getItem("solar_puzzle_highscore") || 0;
+            renderUI();
+        });
+        function toggleLanguage() { currentLang = currentLang === 'th' ? 'cn' : 'th'; renderUI(); }
+        function renderUI() {
+            const txt = i18n[currentLang];
+            document.getElementById("title-main").innerText = txt.titleMain;
+            document.getElementById("desc-main").innerText = txt.descMain;
+            document.getElementById("btn-start").innerText = txt.btnStart;
+            document.getElementById("btn-howto").innerText = txt.btnHowto;
+            document.getElementById("label-highscore").innerText = txt.labelHighscore;
+            document.getElementById("title-howto").innerText = txt.titleHowto;
+            document.getElementById("ht1").innerText = txt.ht1;
+            document.getElementById("ht2").innerText = txt.ht2;
+            document.getElementById("ht3").innerText = txt.ht3;
+            document.getElementById("ht4").innerText = txt.ht4;
+            document.getElementById("btn-back").innerText = txt.btnBack;
+            document.getElementById("lbl-time").innerText = txt.lblTime;
+            document.getElementById("lbl-score").innerText = txt.lblScore;
+            document.getElementById("lbl-traits").innerText = txt.lblTraits;
+            document.getElementById("btn-submit").innerText = txt.btnSubmit;
+            document.getElementById("title-result").innerText = txt.titleResult;
+            document.getElementById("lbl-final-score").innerText = txt.lblFinalScore;
+            document.getElementById("lbl-time-used").innerText = txt.lblTimeUsed;
+            document.getElementById("btn-restart").innerText = txt.btnRestart;
+            document.getElementById("btn-result-menu").innerText = txt.btnResultMenu;
+            renderGameGrid(); renderTraitsPool();
+        }
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+        function startGame() {
+            timeLeft = 120; totalScore = 0; userAnswers = {}; selectedTraitId = null;
+            document.getElementById("timer").innerText = timeLeft; document.getElementById("score").innerText = totalScore;
+            renderGameGrid(); renderTraitsPool();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--; document.getElementById("timer").innerText = timeLeft;
+                if (timeLeft <= 0) endGame(false);
+            }, 1000);
+        }
+        function renderGameGrid() {
+            const grid = document.getElementById("planet-grid"); grid.innerHTML = "";
+            planetsData.forEach((planet, index) => {
+                const card = document.createElement("div"); card.className = "planet-card filled";
+                const traitText = userAnswers[planet.id] ? planetsData.find(p => p.id === userAnswers[planet.id])[currentLang].trait : (currentLang === 'th' ? '-- คลิกเพื่อวางคุณสมบัติ --' : '-- 点击选择填入 --');
+                card.innerHTML = `<div class="planet-slot-num">${i18n[currentLang].slotOrder} ${index + 1}</div><div class="planet-img">${planet.icon}</div><div class="planet-name">${planet[currentLang].name}</div><div class="drop-zone ${userAnswers[planet.id] ? 'has-item' : ''}" onclick="assignTrait('${planet.id}')">${traitText}</div>`;
+                grid.appendChild(card);
+            });
+        }
+        function renderTraitsPool() {
+            const pool = document.getElementById("trait-pool"); pool.innerHTML = "";
+            let shuffled = [...planetsData];
+            if (!pool.dataset.shuffled) { shuffled.sort(() => Math.random() - 0.5); }
+            shuffled.forEach(planet => {
+                const isMatched = Object.values(userAnswers).includes(planet.id);
+                const item = document.createElement("div");
+                item.className = `trait-item ${selectedTraitId === planet.id ? 'selected' : ''} ${isMatched ? 'matched' : ''}`;
+                item.innerText = planet[currentLang].trait;
+                if (!isMatched) { item.onclick = () => { selectedTraitId = planet.id; renderTraitsPool(); }; }
+                pool.appendChild(item);
+            });
+        }
+        function assignTrait(planetId) {
+            if (!selectedTraitId) { alert(i18n[currentLang].selectFirst); return; }
+            userAnswers[planetId] = selectedTraitId; selectedTraitId = null;
+            renderGameGrid(); renderTraitsPool();
+        }
+        function checkAnswers() {
+            let score = 0; planetsData.forEach(planet => { if (userAnswers[planet.id] === planet.id) score += 10; });
+            totalScore = score + Math.floor(timeLeft / 2); endGame(true);
+        }
+        function endGame(isSubmit) {
+            clearInterval(timerInterval); showScreen('screen-result');
+            document.getElementById("final-score").innerText = totalScore;
+            document.getElementById("time-used").innerText = 120 - timeLeft;
+            const currentHigh = parseInt(localStorage.getItem("solar_puzzle_highscore") || 0);
+            if (totalScore > currentHigh) { localStorage.setItem("solar_puzzle_highscore", totalScore); document.getElementById("val-highscore").innerText = totalScore; }
+            const msgEl = document.getElementById("result-msg");
+            msgEl.innerText = (isSubmit && totalScore >= 80) ? i18n[currentLang].winMsg : i18n[currentLang].timeOutMsg;
+        }
+    </script>
+</body>
+</html>
